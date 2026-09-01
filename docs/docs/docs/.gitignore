@@ -1,0 +1,10 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.db
+backend/uploads/
+backend/complaints/
+.env
