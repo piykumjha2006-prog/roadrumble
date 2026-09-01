@@ -1,0 +1,1 @@
+{"name":"Road Rumble","short_name":"Road Rumble","description":"Real-time dashcam pothole detection & automated civic complaint filing","start_url":"/","display":"standalone","background_color":"#090d16","theme_color":"#090d16","lang":"en","scope":"/","orientation":"portrait","icons":[{"src":"icon.svg","sizes":"192x192 512x512","type":"image/svg+xml","purpose":"any maskable"}]}

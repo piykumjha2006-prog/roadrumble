@@ -25,7 +25,14 @@ This doc gives you: (1) the tech stack per layer, (2) how to split the work betw
 ---
 
 ## 1. Work Split (2 members)
-
+Create a React + Vite + Tailwind project called "road-rumble-frontend" configured as
+an installable PWA (add vite-plugin-pwa with a manifest: name "Road Rumble", standalone
+display, an icon). Set up 3 tabs/routes using react-router: "Detect" (default), "Map",
+and "Reports". Add a top app bar with the app name and a small connection-status dot
+that pings GET {VITE_API_URL}/api/health every 10s (green = ok, red = down). Read the
+backend base URL from an env var VITE_API_URL (default http://localhost:8000). Keep the
+UI dark, high-contrast, and large-tap-target since it's used while driving. Give me the
+full file tree and all files.
 The seam is the **HTTP API**. Agree on the contract in Section 2 first, then each person builds their side against it independently.
 
 | | **Member A — Client & Detection** | **Member B — Backend, Data & Complaints** |
@@ -163,7 +170,7 @@ Add a proximity alert: while on any screen, continuously compare the user's live
 the list of known pothole coordinates (fetched + cached from /api/potholes). Using the
 haversine formula, if the user is within ~30 m and closing on a pothole, show a large red
 banner "⚠ Pothole ~Xm ahead" and play a short beep (Web Audio API). Debounce so the same
-pothole only alerts once per approach. This is the two-phone/second-pass warning feature.
+pothole only alerts once per approach. This is the two-phone/second-pass warning feature.A
 ```
 
 ### A7 — ML: train & export the model
