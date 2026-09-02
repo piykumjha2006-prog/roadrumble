@@ -15,10 +15,16 @@ export function haversineDistance(lat1, lon1, lat2, lon2) {
   return R * c; // Distance in meters
 }
 
+// Predictive crowdsourced geofence alert service.
+// Car A passively logs potholes; Rider B gets a spoken chime ~100m before
+// reaching a known spot, giving 8-10 seconds of genuine reaction time.
+const WARNING_DISTANCE = 100; // meters — start warning
+const REARM_DISTANCE = 200; // meters — reset debounce after passing far beyond
+
 class ProximityAlertService {
   constructor() {
     this.activeAlert = null; // { pothole, distance }
-    this.alertedPotholes = new Set(); // Set of pothole IDs already alerted on current approach
+    this.alertedPotholes = new Set(); // IDs already alerted on current approach
     this.listeners = new Set();
     this.audioCtx = null;
   }
@@ -33,7 +39,7 @@ class ProximityAlertService {
     this.listeners.forEach((fn) => fn(this.activeAlert));
   }
 
-  // Play short warning audio beep using Web Audio API
+  // Attention chime: two rising tones
   playWarningBeep() {
     try {
       if (!this.audioCtx) {
@@ -49,23 +55,43 @@ class ProximityAlertService {
 
       if (!this.audioCtx) return;
 
-      const osc = this.audioCtx.createOscillator();
-      const gain = this.audioCtx.createGain();
+      [660, 990].forEach((freq, i) => {
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        const t = this.audioCtx.currentTime + i * 0.22;
 
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(880, this.audioCtx.currentTime); // High pitch A5
-      osc.frequency.exponentialRampToValueAtTime(440, this.audioCtx.currentTime + 0.25);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
 
-      gain.gain.setValueAtTime(0.3, this.audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.001, t);
+        gain.gain.exponentialRampToValueAtTime(0.35, t + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
 
-      osc.connect(gain);
-      gain.connect(this.audioCtx.destination);
-
-      osc.start();
-      osc.stop(this.audioCtx.currentTime + 0.25);
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.22);
+      });
     } catch (e) {
       console.warn('Web Audio API play error:', e);
+    }
+  }
+
+  // Spoken voice alert: "Caution: Severe road depression 100m ahead"
+  speakAlert(distance, roadName) {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      const road = roadName ? ` near ${roadName}` : '';
+      const utterance = new SpeechSynthesisUtterance(
+        `Caution. Severe road depression. ${distance} meters ahead${road}.`
+      );
+      utterance.rate = 1.05;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('Speech synthesis error:', e);
     }
   }
 
@@ -90,21 +116,22 @@ class ProximityAlertService {
         closestPothole = pothole;
       }
 
-      // Reset approach debounce if user has moved away (> 50m)
-      if (dist > 50 && this.alertedPotholes.has(pothole.id)) {
+      // Re-arm alert once rider has passed well beyond the pothole
+      if (dist > REARM_DISTANCE && this.alertedPotholes.has(pothole.id)) {
         this.alertedPotholes.delete(pothole.id);
       }
     });
 
-    // Check if within 30 meters threshold
-    if (closestPothole && minDistance <= 30) {
+    // Predictive geofence: warn within 100m
+    if (closestPothole && minDistance <= WARNING_DISTANCE) {
       const roundedDist = Math.round(minDistance);
       this.activeAlert = { pothole: closestPothole, distance: roundedDist };
 
-      // Fire audio beep & notify if not already alerted on current approach
+      // Fire chime + voice once per approach
       if (!this.alertedPotholes.has(closestPothole.id)) {
         this.alertedPotholes.add(closestPothole.id);
         this.playWarningBeep();
+        this.speakAlert(roundedDist, closestPothole.road_name);
       }
 
       this.notify();

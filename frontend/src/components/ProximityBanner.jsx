@@ -27,12 +27,17 @@ export default function ProximityBanner() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-black tracking-tight text-white uppercase flex items-center gap-1">
-                  ⚠️ POTHOLE ~{distance}m AHEAD
+                  ⚠️ ~{distance}m AHEAD
                 </h3>
                 <Volume2 className="w-4 h-4 text-amber-300 animate-pulse" />
               </div>
               <p className="text-xs font-semibold text-rose-100 line-clamp-1">
-                {pothole.road_name || `Near GPS: ${pothole.lat.toFixed(4)}, ${pothole.lng.toFixed(4)}`}
+                {pothole.road_name
+                  ? `Severe road depression • ${pothole.road_name}`
+                  : `Severe road depression • GPS: ${pothole.lat.toFixed(4)}, ${pothole.lng.toFixed(4)}`}
+              </p>
+              <p className="text-[10px] font-mono text-amber-200/80">
+                Reported by Road Rumble community
               </p>
             </div>
           </div>

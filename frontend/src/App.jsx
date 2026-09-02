@@ -7,19 +7,19 @@ import ProximityBanner from './components/ProximityBanner';
 import DetectPage from './pages/DetectPage';
 import MapPage from './pages/MapPage';
 import ReportsPage from './pages/ReportsPage';
+import NavigatePage from './pages/NavigatePage';
 import { fetchPotholes } from './services/api';
 import { proximityAlertInstance } from './services/proximityAlert';
 
 export default function App() {
   const [cachedPotholes, setCachedPotholes] = useState([]);
 
-  // 1. Fetch & cache known pothole list every 30s
+  // 1. Fetch & cache known pothole list every 15s
   const refreshPotholeCache = useCallback(async () => {
     const data = await fetchPotholes();
-    if (data && data.length > 0) {
-      setCachedPotholes(data);
-    }
+    setCachedPotholes(Array.isArray(data) ? data : []);
   }, []);
+
 
   useEffect(() => {
     refreshPotholeCache();
@@ -58,6 +58,7 @@ export default function App() {
             <Route path="/" element={<DetectPage />} />
             <Route path="/detect" element={<Navigate to="/" replace />} />
             <Route path="/map" element={<MapPage />} />
+            <Route path="/navigate" element={<NavigatePage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

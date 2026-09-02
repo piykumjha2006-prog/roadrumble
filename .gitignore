@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.pytest_cache/
+
+# Databases & runtime artifacts
+*.db
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/complaints/*
+!backend/complaints/.gitkeep
+
+# ML training artifacts (too large for git)
+ml/pothole_dataset.zip
+ml/pothole_data/
+ml/runs/
+ml/yolov8n.pt
+ml/dataset/
+
+# Node
+node_modules/
+
+# OS / editor
+.claude/
+Thumbs.db
+.DS_Store
+
+# Local env files (keep .env.example)
+frontend/.env

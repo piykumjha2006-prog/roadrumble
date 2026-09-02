@@ -3,6 +3,37 @@ import * as ort from 'onnxruntime-web';
 // Configure ONNX WASM paths if needed
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/';
 
+// Pinhole camera approximation: distance to object from its bounding box height.
+// Typical dashcam FOV ~ 60° vertical => focal length in pixels for a 720p frame.
+const KNOWN_BOX_HEIGHT_AT_1M = 0.65; // normalized bbox height (fraction of frame) of a 30cm pothole at 1m
+const POTHOLE_REF_WIDTH_M = 0.35; // typical large pothole ~35cm across, used for size scaling
+
+// Estimate real-world distance (meters) to detected object from bbox geometry.
+// Uses inverse-square falloff of apparent size in a pinhole camera model.
+export function estimateDistance(bboxHeightNorm, frameHeight) {
+  // bboxHeightNorm: height of bbox as fraction of frame height (0..1)
+  if (!bboxHeightNorm || bboxHeightNorm <= 0) return null;
+  const dist = (POTHOLE_REF_WIDTH_M * 1.0) / bboxHeightNorm; // meters, approx
+  return Math.round(Math.min(Math.max(dist, 0.5), 60) * 10) / 10;
+}
+
+// Estimate physical size of pothole given apparent bbox size + estimated distance
+export function estimateSizeMeters(bboxWidthNorm, bboxHeightNorm, distanceM) {
+  if (!distanceM || !bboxWidthNorm || !bboxHeightNorm) return null;
+  // Simple pinhole: realWidth ≈ apparentNormWidth * distance * FOVfactor
+  const realW = bboxWidthNorm * distanceM * 1.2;
+  const realH = bboxHeightNorm * distanceM * 1.2;
+  const avg = (realW + realH) / 2;
+  return Math.round(Math.min(Math.max(avg, 0.05), 3) * 100) / 100;
+}
+
+export function sizeCategory(sizeM) {
+  if (sizeM == null) return 'unknown';
+  if (sizeM < 0.3) return 'small';
+  if (sizeM < 0.7) return 'medium';
+  return 'large';
+}
+
 export class PotholeDetector {
   constructor() {
     this.session = null;
@@ -101,10 +132,19 @@ export class PotholeDetector {
         const x = Math.max(0, cx - w / 2);
         const y = Math.max(0, cy - h / 2);
 
+        // Enrich with size + distance estimates
+        const bboxHeightNorm = h / frameHeight;
+        const bboxWidthNorm = w / frameWidth;
+        const distanceM = estimateDistance(bboxHeightNorm, frameHeight);
+        const sizeM = estimateSizeMeters(bboxWidthNorm, bboxHeightNorm, distanceM);
+
         detections.push({
           box: [x, y, w, h],
           confidence: parseFloat(confidence.toFixed(2)),
           class: 'pothole',
+          distanceM,
+          sizeM,
+          sizeCategory: sizeCategory(sizeM),
         });
       }
     }
@@ -160,11 +200,19 @@ export class PotholeDetector {
     const h = frameHeight * 0.35;
     const confidence = 0.87 + (Math.sin(now / 200) * 0.05);
 
+    // Synthesize plausible distance/size values for demo mode too
+    const bboxHeightNorm = h / frameHeight;
+    const distanceM = estimateDistance(bboxHeightNorm, frameHeight);
+    const sizeM = estimateSizeMeters(w / frameWidth, bboxHeightNorm, distanceM);
+
     return [
       {
         box: [x, y, w, h],
         confidence: parseFloat(confidence.toFixed(2)),
         class: 'pothole (demo)',
+        distanceM,
+        sizeM,
+        sizeCategory: sizeCategory(sizeM),
       },
     ];
   }
@@ -173,7 +221,7 @@ export class PotholeDetector {
   drawBoundingBoxes(ctx, detections, frameWidth, frameHeight) {
     ctx.clearRect(0, 0, frameWidth, frameHeight);
 
-    detections.forEach(({ box, confidence, class: label }) => {
+    detections.forEach(({ box, confidence, class: label, distanceM, sizeM, sizeCategory: cat }) => {
       const [x, y, w, h] = box;
 
       // Glow effect background
@@ -209,7 +257,7 @@ export class PotholeDetector {
       const tagText = `⚠️ POTHOLE ${Math.round(confidence * 100)}%`;
       ctx.font = 'bold 12px monospace';
       const textWidth = ctx.measureText(tagText).width;
-      
+
       const tagHeight = 22;
       const tagY = Math.max(0, y - tagHeight);
 
@@ -221,6 +269,19 @@ export class PotholeDetector {
 
       ctx.fillStyle = '#f59e0b';
       ctx.fillText(tagText, x + 7, tagY + 15);
+
+      // Size + distance info tag (second line)
+      if (distanceM != null) {
+        const infoText = `${cat ? cat.toUpperCase() : ''} • ~${distanceM}m away${sizeM ? ` • ${sizeM}m` : ''}`;
+        ctx.font = 'bold 11px monospace';
+        const infoWidth = ctx.measureText(infoText).width;
+        const infoY = tagY + tagHeight + 2;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+        ctx.fillRect(x, infoY, infoWidth + 12, 18);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(infoText, x + 6, infoY + 13);
+      }
     });
   }
 }

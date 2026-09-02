@@ -1,0 +1,12 @@
+{
+  "name": "road-rumble",
+  "version": "1.0.0",
+  "description": "Road Rumble — Dashcam-based pothole detection & automated civic complaint platform",
+  "scripts": {
+    "build:frontend": "cd frontend && npm run build",
+    "start": "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
+    "dev:frontend": "cd frontend && npm run dev",
+    "test:backend": "cd backend && python -m pytest",
+    "seed": "cd backend && python seed.py"
+  }
+}

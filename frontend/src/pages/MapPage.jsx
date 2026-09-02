@@ -17,7 +17,7 @@ function RecenterMap({ center }) {
 }
 
 // Generate custom SVG marker icons colored by confidence rating
-function createCustomMarkerIcon(confidence) {
+export function createCustomMarkerIcon(confidence) {
   let color = '#ef4444'; // Red high hazard (default)
   let shadowColor = 'rgba(239, 68, 68, 0.4)';
 
@@ -61,7 +61,7 @@ function createCustomMarkerIcon(confidence) {
 }
 
 // User location blue pulse marker
-const userLocationIcon = L.divIcon({
+export const userLocationIcon = L.divIcon({
   html: `
     <div style="position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
       <span style="position: absolute; width: 100%; height: 100%; border-radius: 50%; background: #38bdf8; opacity: 0.6; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
@@ -73,61 +73,20 @@ const userLocationIcon = L.divIcon({
   iconAnchor: [12, 12],
 });
 
-// Seed fallback potholes if backend is offline or empty
-const SEED_POTHOLES = [
-  {
-    id: 101,
-    lat: 12.9716,
-    lng: 77.5946,
-    timestamp: new Date().toISOString(),
-    confidence: 0.92,
-    road_name: 'MG Road, Central District',
-    image_url: null,
-    hit_count: 5,
-    complaint_status: 'none',
-  },
-  {
-    id: 102,
-    lat: 12.9784,
-    lng: 77.6408,
-    timestamp: new Date().toISOString(),
-    confidence: 0.78,
-    road_name: '100 Feet Rd, Indiranagar',
-    image_url: null,
-    hit_count: 2,
-    complaint_status: 'none',
-  },
-  {
-    id: 103,
-    lat: 12.9352,
-    lng: 77.6245,
-    timestamp: new Date().toISOString(),
-    confidence: 0.62,
-    road_name: '80 Feet Rd, Koramangala',
-    image_url: null,
-    hit_count: 1,
-    complaint_status: 'none',
-  },
-];
-
 export default function MapPage() {
   const [potholes, setPotholes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userCenter, setUserCenter] = useState([12.9716, 77.5946]); // Bangalore default
+  const [userCenter, setUserCenter] = useState([12.9716, 77.5946]); // Default center
   const [generatingId, setGeneratingId] = useState(null);
 
   // 1. Fetch Potholes from API
   const loadMapData = useCallback(async () => {
     setLoading(true);
     const data = await fetchPotholes();
-    if (data && data.length > 0) {
-      setPotholes(data);
-    } else {
-      // Fallback to seed data if server returns empty list
-      setPotholes(SEED_POTHOLES);
-    }
+    setPotholes(Array.isArray(data) ? data : []);
     setLoading(false);
   }, []);
+
 
   // 2. Refresh every 15 seconds & on mount
   useEffect(() => {

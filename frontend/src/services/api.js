@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL !== undefined ? import.meta.env.VITE_API_URL : '';
 
 export async function checkHealth() {
   try {
@@ -19,6 +19,20 @@ export async function checkHealth() {
     return false;
   }
 }
+
+export async function fetchServerInfo() {
+  try {
+    const response = await fetch(`${API_URL}/api/info`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    return null;
+  }
+}
+
 
 export async function fetchPotholes() {
   try {

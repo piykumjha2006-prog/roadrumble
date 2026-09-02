@@ -260,8 +260,8 @@ export default function DetectPage() {
               <Camera className="w-7 h-7" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Live Detection Feed</h2>
-              <p className="text-xs text-slate-400 font-medium">3s debounced auto-uploader</p>
+              <h2 className="text-lg font-bold text-white tracking-tight">Passive Hazard Logging</h2>
+              <p className="text-xs text-slate-400 font-medium">Silently maps potholes for community alerts</p>
             </div>
           </div>
           
@@ -348,9 +348,17 @@ export default function DetectPage() {
         {/* HUD Top-Right Overlay: Inference Hazard Counter */}
         <div className="absolute top-3 right-3 z-20 bg-slate-900/90 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-xl text-[11px] font-mono flex items-center gap-1.5 shadow-xl">
           {currentDetections.length > 0 ? (
-            <span className="text-rose-400 font-black animate-pulse flex items-center gap-1">
-              <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
-              POTHOLE DETECTED!
+            <span className="text-rose-400 font-black animate-pulse flex flex-col items-end gap-0.5">
+              <span className="flex items-center gap-1">
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+                POTHOLE DETECTED!
+              </span>
+              {currentDetections[0].distanceM != null && (
+                <span className="text-cyan-300 font-bold text-[10px]">
+                  {currentDetections[0].sizeCategory?.toUpperCase() || 'UNKNOWN'} • ~{currentDetections[0].distanceM}m away
+                  {currentDetections[0].sizeM ? ` • ${currentDetections[0].sizeM}m wide` : ''}
+                </span>
+              )}
             </span>
           ) : (
             <span className="text-slate-300 font-semibold flex items-center gap-1">

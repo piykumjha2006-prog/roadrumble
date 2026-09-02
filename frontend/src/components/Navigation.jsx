@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Camera, MapPin, FileText } from 'lucide-react';
+import { Camera, MapPin, Navigation2, FileText } from 'lucide-react';
 
 export default function Navigation() {
   const navItems = [
@@ -8,6 +8,11 @@ export default function Navigation() {
       to: '/',
       label: 'Detect',
       icon: Camera,
+    },
+    {
+      to: '/navigate',
+      label: 'Navigate',
+      icon: Navigation2,
     },
     {
       to: '/map',
@@ -23,7 +28,7 @@ export default function Navigation() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#0d1322]/95 backdrop-blur border-t border-slate-800 px-2 py-2 shadow-2xl">
-      <div className="max-w-md mx-auto grid grid-cols-3 gap-2">
+      <div className="max-w-md mx-auto grid grid-cols-4 gap-2">
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
